@@ -13,8 +13,8 @@ class ActorNet:
         self.learning_rate = learning_rate
         self.tau = tau
 
-        self.create_network()
-        self.create_target()
+        self.state, self.action, self.phase = self.create_network()
+        self.tar_state, self.tar_action, self.tar_phase = self.create_target()
         self.create_train()
         self.sess.run(tf.initialize_all_variables())
         self.update_target(True)
@@ -23,40 +23,46 @@ class ActorNet:
         with tf.variable_scope("train"):
 
             # Placeholders
-            self.state = tf.placeholder(tf.float32, [None, self.state_size])
-            self.phase = tf.placeholder(tf.bool)
+            state = tf.placeholder(tf.float32, [None, self.state_size])
+            phase = tf.placeholder(tf.bool)
 
             # Define network
-            self.bn1 = tf.contrib.layers.batch_norm(self.state, center=True, scale=True, is_training=self.phase)
-            self.hidden1 = tf.contrib.layers.fully_connected(self.bn1, 32)
-            self.bn2 = tf.contrib.layers.batch_norm(self.hidden1, center=True, scale=True, is_training=self.phase)
-            self.hidden2 = tf.contrib.layers.fully_connected(self.bn2, 64)
-            self.bn3 = tf.contrib.layers.batch_norm(self.hidden2, center=True, scale=True, is_training=self.phase)
-            self.hidden3 = tf.contrib.layers.fully_connected(self.bn3, 32)
-            self.bn4 = tf.contrib.layers.batch_norm(self.hidden3, center=True, scale=True, is_training=self.phase)
+            bn1 = tf.contrib.layers.batch_norm(state, center=True, scale=True, is_training=phase)
+            hidden1 = tf.contrib.layers.fully_connected(bn1, 32)
+            bn2 = tf.contrib.layers.batch_norm(hidden1, center=True, scale=True, is_training=phase)
+            hidden2 = tf.contrib.layers.fully_connected(bn2, 64)
+            bn3 = tf.contrib.layers.batch_norm(hidden2, center=True, scale=True, is_training=phase)
+            hidden3 = tf.contrib.layers.fully_connected(bn3, 32)
+            bn4 = tf.contrib.layers.batch_norm(hidden3, center=True, scale=True, is_training=phase)
 
             # Define action
-            self.raw_action = tf.contrib.layers.fully_connected(self.bn4, self.action_size, activation_fn=tf.nn.sigmoid)
-            self.action = tf.add(tf.multiply(self.raw_action, self.range), self.action_low)
+            raw_action = tf.contrib.layers.fully_connected(bn4, self.action_size, activation_fn=tf.nn.sigmoid)
+            action = tf.add(tf.multiply(raw_action, self.range), self.action_low)
+
+            return state, action, phase
 
 
     def create_target(self):
         with tf.variable_scope("target"):
-            self.tar_state = tf.placeholder(tf.float32, [None, self.state_size])
-            self.tar_phase = tf.placeholder(tf.bool)
+
+            # Placeholders
+            state = tf.placeholder(tf.float32, [None, self.state_size])
+            phase = tf.placeholder(tf.bool)
 
             # Define network
-            self.tar_bn1 = tf.contrib.layers.batch_norm(self.tar_state, center=True, scale=True, is_training=self.tar_phase)
-            self.tar_hidden1 = tf.contrib.layers.fully_connected(self.tar_bn1, 32)
-            self.tar_bn2 = tf.contrib.layers.batch_norm(self.tar_hidden1, center=True, scale=True, is_training=self.tar_phase)
-            self.tar_hidden2 = tf.contrib.layers.fully_connected(self.tar_bn2, 64)
-            self.tar_bn3 = tf.contrib.layers.batch_norm(self.tar_hidden2, center=True, scale=True, is_training=self.tar_phase)
-            self.tar_hidden3 = tf.contrib.layers.fully_connected(self.tar_bn3, 32)
-            self.tar_bn4 = tf.contrib.layers.batch_norm(self.tar_hidden3, center=True, scale=True, is_training=self.tar_phase)
+            bn1 = tf.contrib.layers.batch_norm(state, center=True, scale=True, is_training=phase)
+            hidden1 = tf.contrib.layers.fully_connected(bn1, 32)
+            bn2 = tf.contrib.layers.batch_norm(hidden1, center=True, scale=True, is_training=phase)
+            hidden2 = tf.contrib.layers.fully_connected(bn2, 64)
+            bn3 = tf.contrib.layers.batch_norm(hidden2, center=True, scale=True, is_training=phase)
+            hidden3 = tf.contrib.layers.fully_connected(bn3, 32)
+            bn4 = tf.contrib.layers.batch_norm(hidden3, center=True, scale=True, is_training=phase)
 
             # Define action
-            self.tar_raw_action = tf.contrib.layers.fully_connected(self.tar_bn4, self.action_size, activation_fn=tf.nn.sigmoid)
-            self.tar_action = tf.add(tf.multiply(self.tar_raw_action, self.range), self.action_low)
+            raw_action = tf.contrib.layers.fully_connected(bn4, self.action_size, activation_fn=tf.nn.sigmoid)
+            action = tf.add(tf.multiply(raw_action, self.range), self.action_low)
+
+            return state, action, phase
 
 
 
@@ -73,19 +79,19 @@ class ActorNet:
 
     def create_train(self):
         self.action_gradients = tf.placeholder(tf.float32, [None, self.action_size])
-        self.loss = tf.reduce_mean(tf.multiply(-self.action_gradients, self.action))
+        self.loss = tf.reduce_mean(tf.multiply(-action_gradients, self.action))
         self.optimizer = tf.train.AdamOptimizer(self.learning_rate).minimize(self.loss)
 
     def train(self, action_gradients, state_batch):
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(update_ops):
-         self.sess.run(self.optimizer, feed_dict={self.action_gradients = action_gradients, self.state = state_batch, self.phase = True})
+            self.sess.run(self.optimizer, feed_dict={self.action_gradients:action_gradients, self.state:state_batch, self.phase:True})
 
     def actions(self, state):
-        return self.sess.run(self.action, feed_dict={self.state=state, self.phase=False})
+        return self.sess.run(self.action, feed_dict={self.state:state, self.phase:False})
 
     def target_actions(self, state):
-        return self.sess.run(self.tar_action, feed_dict={self.tar_state=state, self.tar_phase=True})
+        return self.sess.run(self.tar_action, feed_dict={self.tar_state:state, self.tar_phase:True})
 
     def variables(self, name):
         return tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, name)
