@@ -15,8 +15,6 @@ class DDPG:
         # Define net
         self.sess = tf.Session()
         self.task = task
-        self.learning_rate = learning_rate
-        self.tau = tau
         self.actor = ActorNet(self.sess, self.task.state_size, self.task.action_size, self.learning_rate, \
                      self.task.action_low, self.task.action_high, self.tau)
         self.critic = CriticNet(self.sess, self.task.state_size, self.task.action_size, self.learning_rate, self.tau)
@@ -32,10 +30,15 @@ class DDPG:
         self.batch_size = 64
         self.memory = Replay(self.buffer_size, self.batch_size)
 
+        # Score
+        self.best_score = -np.inf
+
     def reset(self):
         self.noise.reset()
         state = self.task.reset()
         self.last_state = state
+        self.total_reward = 0.0
+        self.count = 0
         return state
 
     def learn(self, experience):
@@ -51,7 +54,7 @@ class DDPG:
         next_q_targets = self.critic.targetQ(next_state_batch, next_action_batch)
 
         # Train critic net
-        q_targets = reward_batch + gamma * next_q_targets * (1 - done_batch)
+        q_targets = reward_batch + self.gamma * next_q_targets * (1 - done_batch)
         self.critic.train(state_batch, action_batch, q_targets)
 
         # Train actor net
@@ -63,7 +66,12 @@ class DDPG:
         self.critic.update_target(False)
 
     def step(self, action, reward, next_state, done):
-        self.memory.add(self.last_state, action, reward, next_state, done)
+        self.memory.add([self.last_state, action, reward, next_state, done])
+        self.total_reward += reward
+        self.count += 1
+        if done:
+            self.score = self.total_reward / float(self.count) if self.count else 0.0
+            self.best_score = max(self.best_score, self.score)
 
         if len(self.memory.buffer) > self.batch_size:
             experiences = self.memory.sample()
@@ -72,8 +80,9 @@ class DDPG:
         self.last_state = next_state
 
     def act(self, states):
-        action = self.actor.actions(states)
-        return action + self.noise.sample()
+        states = np.reshape(states, [-1, self.task.state_size])
+        action = self.actor.actions(states)[0]
+        return list(action + self.noise.sample())
 
 
 

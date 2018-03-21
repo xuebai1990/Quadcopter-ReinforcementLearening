@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 class CriticNet:
     def __init__(self, sess, state_size, action_size, learning_rate, tau):
@@ -11,56 +12,56 @@ class CriticNet:
         self.state, self.action, self.phase, self.q_values = self.create_q_net()
         self.tar_state, self.tar_action, self.tar_phase, self.tar_q_values = self.create_target_q_net()
         self.create_train()
-        self.sess.run(tf.initialize_all_variables())
+        self.sess.run(tf.global_variables_initializer())
         self.update_target(True)
 
     def create_q_net(self):
-        state = tf.placeholder(tf.float32, [None, state_size])
-        action = tf.placeholder(tf.float32, [None, action_size])
+        state = tf.placeholder(tf.float32, [None, self.state_size])
+        action = tf.placeholder(tf.float32, [None, self.action_size])
         phase = tf.placeholder(tf.bool)
 
         with tf.variable_scope("train"):
             # State
-            bn1_state = tf.contrib.layers.batch_norm(state, center=True, scale=True, is_training=phase)
-            hidden1_state = tf.contrib.layers.fully_connected(bn1_state, 32)
-            bn2_state = tf.contrib.layers.batch_norm(hidden1_state, center=True, scale=True, is_training=phase)
-            hidden2_state = tf.contrib.layers.fully_connected(bn2_state, 64)
+            bn1_state = tf.contrib.layers.batch_norm(state, center=True, scale=True, is_training=phase, scope="bn1_state")
+            hidden1_state = tf.contrib.layers.fully_connected(bn1_state, 32, scope='h1_state')
+            bn2_state = tf.contrib.layers.batch_norm(hidden1_state, center=True, scale=True, is_training=phase, scope="bn2_state")
+            hidden2_state = tf.contrib.layers.fully_connected(bn2_state, 64, scope='h2_state')
 
             # Action
-            bn1_action = tf.contrib.layers.batch_norm(action, center=True, scale=True, is_training=phase)
-            hidden1_action = tf.contrib.layers.fully_connected(bn1_action, 32)
-            bn2_action = tf.contrib.layers.batch_norm(hidden1_action, center=True, scale=True, is_training=phase)
-            hidden2_action = tf.contrib.layers.fully_connected(bn2_action, 64)
+            bn1_action = tf.contrib.layers.batch_norm(action, center=True, scale=True, is_training=phase, scope="bn1_action")
+            hidden1_action = tf.contrib.layers.fully_connected(bn1_action, 32, scope='h1_action')
+            bn2_action = tf.contrib.layers.batch_norm(hidden1_action, center=True, scale=True, is_training=phase, scope="bn2_action")
+            hidden2_action = tf.contrib.layers.fully_connected(bn2_action, 64, scope='h2_action')
 
             # Concate
-            combine = tf.concat([hidden2_state, hidden2_action])
+            combine = tf.concat([hidden2_state, hidden2_action], axis=-1)
             hidden3 = tf.nn.relu(combine)
-            q_values = tf.contrib.layers.fully_connected(hidden3, 1)
+            q_values = tf.contrib.layers.fully_connected(hidden3, 1, scope='q')
 
         return state, action, phase, q_values
 
     def create_target_q_net(self):
-        state = tf.placeholder(tf.float32, [None, state_size])
-        action = tf.placeholder(tf.float32, [None, action_size])
+        state = tf.placeholder(tf.float32, [None, self.state_size])
+        action = tf.placeholder(tf.float32, [None, self.action_size])
         phase = tf.placeholder(tf.bool)
 
         with tf.variable_scope("target"):
             # State
-            bn1_state = tf.contrib.layers.batch_norm(state, center=True, scale=True, is_training=phase)
-            hidden1_state = tf.contrib.layers.fully_connected(bn1_state, 32)
-            bn2_state = tf.contrib.layers.batch_norm(hidden1_state, center=True, scale=True, is_training=phase)
-            hidden2_state = tf.contrib.layers.fully_connected(bn2_state, 64)
+            bn1_state = tf.contrib.layers.batch_norm(state, center=True, scale=True, is_training=phase, scope="tar_bn1_state")
+            hidden1_state = tf.contrib.layers.fully_connected(bn1_state, 32, scope='tar_h1_state')
+            bn2_state = tf.contrib.layers.batch_norm(hidden1_state, center=True, scale=True, is_training=phase, scope="tar_bn2_state")
+            hidden2_state = tf.contrib.layers.fully_connected(bn2_state, 64, scope='tar_h2_state')
 
             # Action
-            bn1_action = tf.contrib.layers.batch_norm(action, center=True, scale=True, is_training=phase)
-            hidden1_action = tf.contrib.layers.fully_connected(bn1_action, 32)
-            bn2_action = tf.contrib.layers.batch_norm(hidden1_action, center=True, scale=True, is_training=phase)
-            hidden2_action = tf.contrib.layers.fully_connected(bn2_action, 64)
+            bn1_action = tf.contrib.layers.batch_norm(action, center=True, scale=True, is_training=phase, scope="tar_bn1_action")
+            hidden1_action = tf.contrib.layers.fully_connected(bn1_action, 32, scope='tar_h1_action')
+            bn2_action = tf.contrib.layers.batch_norm(hidden1_action, center=True, scale=True, is_training=phase, scope="tar_bn2_action")
+            hidden2_action = tf.contrib.layers.fully_connected(bn2_action, 64, scope='tar_h2_action')
 
             # Concate
-            combine = tf.concat([hidden2_state, hidden2_action])
+            combine = tf.concat([hidden2_state, hidden2_action], axis=-1)
             hidden3 = tf.nn.relu(combine)
-            q_values = tf.contrib.layers.fully_connected(hidden3, 1)
+            q_values = tf.contrib.layers.fully_connected(hidden3, 1, scope='tar_q')
 
         return state, action, phase, q_values
 
@@ -81,6 +82,7 @@ class CriticNet:
         self.action_gradients = tf.gradients(self.q_values, self.action)
 
     def train(self, batch_state, batch_action,target_q):
+        target_q = np.squeeze(target_q)
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(update_ops):
             self.sess.run(self.optimizer, feed_dict={self.state:batch_state, self.action:batch_action, self.phase:True, self.target_q:target_q})
