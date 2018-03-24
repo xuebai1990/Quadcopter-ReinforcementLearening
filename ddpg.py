@@ -8,7 +8,7 @@ from ounoise import OUNoise
 class DDPG:
     def __init__(self, task):
         # Hyper parameters
-        self.learning_rate = 1e-5
+        self.learning_rate = 1e-6
         self.gamma = 0.99
         self.tau = 0.01
 
