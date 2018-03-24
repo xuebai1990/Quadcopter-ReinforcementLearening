@@ -48,10 +48,10 @@ class Task():
         pose_all = []
         for _ in range(self.action_repeat):
             done = self.sim.next_timestep(rotor_speeds) # update the sim pose and velocities
-#            reward += self.get_reward() 
-            next_reward, die = self.self_defined_reward()
-            reward += next_reward
-            if die: done = True
+            reward += self.get_reward() 
+#            next_reward, die = self.self_defined_reward()
+#            reward += next_reward
+#            if die: done = True
             pose_all.append(self.sim.pose)
         next_state = np.concatenate(pose_all)
         return next_state, reward, done
@@ -63,5 +63,5 @@ class Task():
         return state
 
     def mountainHeight(self, x, y):
-        z = max(0, 10 * np.exp(-(x - 0.) ** 2 / 10.0 - (y - 0.) ** 2 / 10.0) - 1.)
+        z = max(0, 10 * np.exp(-(x - 5.) ** 2 / 10.0 - (y - 5.) ** 2 / 10.0) - 1.)
         return z

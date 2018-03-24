@@ -8,21 +8,22 @@ from ounoise import OUNoise
 class DDPG:
     def __init__(self, task):
         # Hyper parameters
-        self.learning_rate = 1e-6
+        self.learning_rate_actor = 1e-5
+        self.learning_rate_critic = 1e-3
         self.gamma = 0.99
-        self.tau = 0.01
+        self.tau = 0.001
 
         # Define net
         self.sess = tf.Session()
         self.task = task
-        self.actor = ActorNet(self.sess, self.task.state_size, self.task.action_size, self.learning_rate, \
+        self.actor = ActorNet(self.sess, self.task.state_size, self.task.action_size, self.learning_rate_actor, \
                      self.task.action_low, self.task.action_high, self.tau)
-        self.critic = CriticNet(self.sess, self.task.state_size, self.task.action_size, self.learning_rate, self.tau)
+        self.critic = CriticNet(self.sess, self.task.state_size, self.task.action_size, self.learning_rate_critic, self.tau)
 
         # Define noise
         self.mu = 0
         self.theta = 0.15
-        self.sigma = 0.2
+        self.sigma = 0.20
         self.noise = OUNoise(self.task.action_size, self.mu, self.theta, self.sigma)
 
         # Define memory replay
