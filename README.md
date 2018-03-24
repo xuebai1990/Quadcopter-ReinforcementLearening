@@ -1,35 +1,23 @@
-# Deep RL Quadcopter Controller
+# Deep RL Quadcopter Controller (Udacity Deep Learning Nano-degree final project)
 
-*Teach a Quadcopter How to Fly!*
+Implemented deep deterministic policy gradient to control a quadcopter to finish certain task. (see: Lillicrap, Timothy P., et al., 2015. Continuous Control with Deep Reinforcement Learning)
 
-In this project, you will design an agent to fly a quadcopter, and then train it using a reinforcement learning algorithm of your choice! 
+Files:
 
-## Project Instructions
+(1) actor.py: contains actor network, use double network. (see: Hasselt, H. v.; Guez, A.; Silver, D., 2015. Deep Reinforcement Learning with Double Q-learning) 
 
-1. Clone the repository and navigate to the downloaded folder.
+(2) critic.py: contains actor network, use double network and dueling network. (see: Wang, Z.; Schaul, T.; Hessel, M.;Hasselt, H. v.; Lanctot, M.; Freitas, N. d., 2016. Dueling Network Architectures for Deep Reinforcement Learning)
 
-```
-git clone https://github.com/udacity/RL-Quadcopter-2.git
-cd RL-Quadcopter-2
-```
+(3) replay.py: define memory replay (see: Mnih, V. et. al., 2015. Human-level control through deep reinforcement learning)
 
-2. Create and activate a new environment.
+(4) ounoise: Ornstein–Uhlenbeck Noise, used for random action sampling.
 
-```
-conda create -n quadcop python=3.6 matplotlib numpy pandas
-source activate quadcop
-```
+(5) ddpg.py: combine all components to define deep deterministic policy gradient module.
 
-3. Create an [IPython kernel](http://ipython.readthedocs.io/en/stable/install/kernel_install.html) for the `quadcop` environment. 
-```
-python -m ipykernel install --user --name quadcop --display-name "quadcop"
-```
+(6) task.py: define task of the agent
 
-4. Open the notebook.
-```
-jupyter notebook Quadcopter_Project.ipynb
-```
+(7) physics_sim.py: physical simulation of the agent
 
-5. Before running code, change the kernel to match the `quadcop` environment by using the drop-down menu (**Kernel > Change kernel > quadcop**). Then, follow the instructions in the notebook.
+(8) main.py: training of the agent
 
-6. You will likely need to install more pip packages to complete this project.  Please curate the list of packages needed to run your project in the `requirements.txt` file in the repository.# Quadcopper-ReinforcementLearning
+Reference: https://github.com/songrotek/DDPG
