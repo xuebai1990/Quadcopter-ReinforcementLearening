@@ -9,16 +9,18 @@ target_pos = np.array([0., 10., 10.])
 init_pos = np.array([0., 0., 0., 0., 0., 0.])
 task = Task(init_pose=init_pos, target_pos=target_pos, runtime=5.)
 agent = DDPG(task)
-result = []
-fout = open("reward.dat", 'w')
-fout2 = open("physical_info.csv", 'w')
 
+fout1 = open("reward.dat", 'w')
+labels = ['epoch', 'reward']
+writer1 = csv.writer(fout1)
+writer1.writerow(labels)
+
+fout2 = open("physical_info.csv", 'w')
 labels = ['time', 'x', 'y', 'z', 'phi', 'theta', 'psi', 'x_velocity',
           'y_velocity', 'z_velocity', 'phi_velocity', 'theta_velocity',
           'psi_velocity', 'rotor_speed1', 'rotor_speed2', 'rotor_speed3', 'rotor_speed4']
-results = {x : [] for x in labels}
-writer = csv.writer(fout2)
-writer.writerow(labels)
+writer2 = csv.writer(fout2)
+writer2.writerow(labels)
 
 for i_episode in range(1, num_episodes+1):
     state = agent.reset() # start a new episode
@@ -30,15 +32,15 @@ for i_episode in range(1, num_episodes+1):
 
         # Write info to file
         to_write = [task.sim.time] + list(task.sim.pose) + list(task.sim.v) + list(task.sim.angular_v) + list(action)
-        for ii in range(len(labels)):
-            results[labels[ii]].append(to_write[ii])
-        writer.writerow(to_write)
+        writer2.writerow(to_write)
 
         if done:
             print("\rEpisode = {:4d}, score = {:7.3f} (best = {:7.3f})".format(
                 i_episode, agent.score, agent.best_score), end="")  # [debug]
-            result.append(agent.score)
-            fout.write(str(i_episode) + '   ' +  str(agent.score) + '\n')
+            to_write = [i_episode, agent.score]
+            writer1.writerow(to_write)
             break
     sys.stdout.flush()
-    fout.flush()
+    fout1.flush()
+    fout2.flush()
+
