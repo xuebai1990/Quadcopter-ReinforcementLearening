@@ -28,15 +28,18 @@ class ActorNet:
 
             # Define network
             bn1 = tf.contrib.layers.batch_norm(state, center=True, scale=True, is_training=phase, scope='bn1')
-            hidden1 = tf.contrib.layers.fully_connected(bn1, 32, scope='hidden1')
+            hidden1 = tf.contrib.layers.fully_connected(bn1, 32, scope='hidden1', activation_fn=None)
             bn2 = tf.contrib.layers.batch_norm(hidden1, center=True, scale=True, is_training=phase, scope='bn2')
-            hidden2 = tf.contrib.layers.fully_connected(bn2, 64, scope='hidden2')
+            activate1 = tf.nn.relu(bn2)
+            hidden2 = tf.contrib.layers.fully_connected(activate1, 64, scope='hidden2', activation_fn=None)
             bn3 = tf.contrib.layers.batch_norm(hidden2, center=True, scale=True, is_training=phase, scope='bn3')
-            hidden3 = tf.contrib.layers.fully_connected(bn3, 32, scope='hidden3')
+            activate2 = tf.nn.relu(bn3)
+            hidden3 = tf.contrib.layers.fully_connected(activate2, 32, scope='hidden3', activation_fn=None)
             bn4 = tf.contrib.layers.batch_norm(hidden3, center=True, scale=True, is_training=phase, scope='bn4')
+            activate3 = tf.nn.relu(bn4)
 
             # Define action
-            raw_action = tf.contrib.layers.fully_connected(bn4, self.action_size, activation_fn=tf.nn.sigmoid, scope='raw')
+            raw_action = tf.contrib.layers.fully_connected(activate3, self.action_size, activation_fn=tf.nn.sigmoid, scope='raw')
             action = tf.add(tf.multiply(raw_action, self.range), self.action_low)
 
             return state, action, phase
@@ -51,15 +54,18 @@ class ActorNet:
 
             # Define network
             bn1 = tf.contrib.layers.batch_norm(state, center=True, scale=True, is_training=phase, scope='tar_bn1')
-            hidden1 = tf.contrib.layers.fully_connected(bn1, 32, scope='tar_hidden1')
+            hidden1 = tf.contrib.layers.fully_connected(bn1, 32, scope='tar_hidden1', activation_fn=None)
             bn2 = tf.contrib.layers.batch_norm(hidden1, center=True, scale=True, is_training=phase, scope='tar_bn2')
-            hidden2 = tf.contrib.layers.fully_connected(bn2, 64, scope='tar_hidden2')
+            activate1 = tf.nn.relu(bn2)
+            hidden2 = tf.contrib.layers.fully_connected(activate1, 64, scope='tar_hidden2', activation_fn=None)
             bn3 = tf.contrib.layers.batch_norm(hidden2, center=True, scale=True, is_training=phase, scope='tar_bn3')
-            hidden3 = tf.contrib.layers.fully_connected(bn3, 32, scope='tar_hidden3')
+            activate2 = tf.nn.relu(bn3)
+            hidden3 = tf.contrib.layers.fully_connected(activate2, 32, scope='tar_hidden3', activation_fn=None)
             bn4 = tf.contrib.layers.batch_norm(hidden3, center=True, scale=True, is_training=phase, scope='tar_bn4')
+            activate3 = tf.nn.relu(bn4)
 
             # Define action
-            raw_action = tf.contrib.layers.fully_connected(bn4, self.action_size, activation_fn=tf.nn.sigmoid, scope='tar_raw')
+            raw_action = tf.contrib.layers.fully_connected(activate3, self.action_size, activation_fn=tf.nn.sigmoid, scope='tar_raw')
             action = tf.add(tf.multiply(raw_action, self.range), self.action_low)
 
             return state, action, phase

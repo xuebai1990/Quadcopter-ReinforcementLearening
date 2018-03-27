@@ -23,15 +23,17 @@ class CriticNet:
         with tf.variable_scope("train"):
             # State
             bn1_state = tf.contrib.layers.batch_norm(state, center=True, scale=True, is_training=phase, scope="bn1_state")
-            hidden1_state = tf.contrib.layers.fully_connected(bn1_state, 32, scope='h1_state')
+            hidden1_state = tf.contrib.layers.fully_connected(bn1_state, 32, scope='h1_state', activation_fn=None)
             bn2_state = tf.contrib.layers.batch_norm(hidden1_state, center=True, scale=True, is_training=phase, scope="bn2_state")
-            hidden2_state = tf.contrib.layers.fully_connected(bn2_state, 64, scope='h2_state')
+            activate1_state = tf.nn.relu(bn2_state)
+            hidden2_state = tf.contrib.layers.fully_connected(activate1_state, 64, scope='h2_state', activation_fn=None)
 
             # Action
             bn1_action = tf.contrib.layers.batch_norm(action, center=True, scale=True, is_training=phase, scope="bn1_action")
-            hidden1_action = tf.contrib.layers.fully_connected(bn1_action, 32, scope='h1_action')
+            hidden1_action = tf.contrib.layers.fully_connected(bn1_action, 32, scope='h1_action', activation_fn=None)
             bn2_action = tf.contrib.layers.batch_norm(hidden1_action, center=True, scale=True, is_training=phase, scope="bn2_action")
-            hidden2_action = tf.contrib.layers.fully_connected(bn2_action, 64, scope='h2_action')
+            activate2_action = tf.nn.relu(bn2_action)
+            hidden2_action = tf.contrib.layers.fully_connected(activate2_action, 64, scope='h2_action', activation_fn=None)
 
             # Concate
             combine = tf.concat([hidden2_state, hidden2_action], axis=-1)
@@ -48,15 +50,17 @@ class CriticNet:
         with tf.variable_scope("target"):
             # State
             bn1_state = tf.contrib.layers.batch_norm(state, center=True, scale=True, is_training=phase, scope="tar_bn1_state")
-            hidden1_state = tf.contrib.layers.fully_connected(bn1_state, 32, scope='tar_h1_state')
+            hidden1_state = tf.contrib.layers.fully_connected(bn1_state, 32, scope='tar_h1_state', activation_fn=None)
             bn2_state = tf.contrib.layers.batch_norm(hidden1_state, center=True, scale=True, is_training=phase, scope="tar_bn2_state")
-            hidden2_state = tf.contrib.layers.fully_connected(bn2_state, 64, scope='tar_h2_state')
+            activate1_state = tf.nn.relu(bn2_state)
+            hidden2_state = tf.contrib.layers.fully_connected(activate1_state, 64, scope='tar_h2_state', activation_fn=None)
 
             # Action
             bn1_action = tf.contrib.layers.batch_norm(action, center=True, scale=True, is_training=phase, scope="tar_bn1_action")
-            hidden1_action = tf.contrib.layers.fully_connected(bn1_action, 32, scope='tar_h1_action')
+            hidden1_action = tf.contrib.layers.fully_connected(bn1_action, 32, scope='tar_h1_action', activation_fn=None)
             bn2_action = tf.contrib.layers.batch_norm(hidden1_action, center=True, scale=True, is_training=phase, scope="tar_bn2_action")
-            hidden2_action = tf.contrib.layers.fully_connected(bn2_action, 64, scope='tar_h2_action')
+            activate2_action = tf.nn.relu(bn2_action)
+            hidden2_action = tf.contrib.layers.fully_connected(activate2_action, 64, scope='tar_h2_action', activation_fn=None)
 
             # Concate
             combine = tf.concat([hidden2_state, hidden2_action], axis=-1)
