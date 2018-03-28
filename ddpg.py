@@ -33,6 +33,7 @@ class DDPG:
 
         # Score
         self.best_score = -np.inf
+        self.best_reward = -np.inf
 
     def reset(self):
         self.noise.reset()
@@ -73,6 +74,7 @@ class DDPG:
         if done:
             self.score = self.total_reward / float(self.count) if self.count else 0.0
             self.best_score = max(self.best_score, self.score)
+            self.best_reward = max(self.total_reward, self.best_reward)
 
         if len(self.memory.buffer) > self.batch_size:
             experiences = self.memory.sample()

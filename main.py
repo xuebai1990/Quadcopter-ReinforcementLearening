@@ -5,9 +5,9 @@ import sys
 import csv
 
 num_episodes = 1000
-target_pos = np.array([0., 10., 10.])
+target_pos = np.array([0., 5., 5.])
 init_pos = np.array([0., 0., 0., 0., 0., 0.])
-task = Task(init_pose=init_pos, target_pos=target_pos, runtime=5.)
+task = Task(init_pose=init_pos, target_pos=target_pos, runtime=20.)
 agent = DDPG(task)
 
 fout1 = open("reward.dat", 'w')
@@ -35,9 +35,9 @@ for i_episode in range(1, num_episodes+1):
         writer2.writerow(to_write)
 
         if done:
-            print("\rEpisode = {:4d}, score = {:7.3f} (best = {:7.3f})".format(
-                i_episode, agent.score, agent.best_score), end="")  # [debug]
-            to_write = [i_episode, agent.score]
+            print("\rEpisode = {:4d}, reward = {:7.3f} (best = {:7.3f})".format(
+                i_episode, agent.total_reward, agent.best_reward), end="")  # [debug]
+            to_write = [i_episode, agent.total_reward]
             writer1.writerow(to_write)
             break
     sys.stdout.flush()
