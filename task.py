@@ -20,18 +20,26 @@ class Task():
 
         self.state_size = self.action_repeat * 6
         self.action_low = 0
-        self.action_high = 900
+        self.action_high = 5000
         self.action_size = 4
+        self.runtime = runtime
 
         # Goal
         self.target_pos = target_pos if target_pos is not None else np.array([0., 0., 10.]) 
-        self.len = np.linalg.norm(self.target_pos - init_pose[:3])
+#        self.len = np.linalg.norm(self.target_pos - init_pose[:3])
 
     def get_reward(self):
         """Uses current pose of sim to return reward."""
-#        reward = 1.-.3*(abs(self.sim.pose[:3] - self.target_pos)).sum()
-        reward = max(1.0 - np.linalg.norm(self.target_pos - self.sim.pose[:3])/self.len, -1)
-        return reward
+#        reward = max(1.0 - np.linalg.norm(self.target_pos - self.sim.pose[:3])/self.len, -1)
+        done = False
+        reward = -min(abs(self.target_pos[2] - self.sim.pose[2]), 20.0)  # reward = zero for matching target z, -ve as you go farther, upto -20
+        if self.sim.pose[2] >= self.target_pos[2]:  # agent has crossed the target height
+            reward += 20.0  # bonus reward
+            done = True
+        elif self.sim.time > self.runtime or self.sim.pose[2] < 0:  # agent has run out of time
+            reward -= 20.0  # extra penalty
+            done = True
+        return reward, done
 
     def self_defined_reward(self):
         die = False
@@ -46,15 +54,15 @@ class Task():
 
     def step(self, rotor_speeds):
         """Uses action to obtain next state, reward, done."""
+        over = False
         reward = 0
         pose_all = []
         for _ in range(self.action_repeat):
             done = self.sim.next_timestep(rotor_speeds) # update the sim pose and velocities
-            reward += self.get_reward() 
-#            next_reward, die = self.self_defined_reward()
-#            reward += next_reward
-#            if die: done = True
+            next_reward, over = self.get_reward()
             pose_all.append(self.sim.pose)
+            reward += next_reward
+            if over: done = True
         next_state = np.concatenate(pose_all)
         return next_state, reward, done
 

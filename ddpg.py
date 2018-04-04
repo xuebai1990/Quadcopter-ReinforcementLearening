@@ -8,7 +8,7 @@ from ounoise import OUNoise
 class DDPG:
     def __init__(self, task):
         # Hyper parameters
-        self.learning_rate_actor = 1e-5
+        self.learning_rate_actor = 1e-4
         self.learning_rate_critic = 1e-3
         self.gamma = 0.99
         self.tau = 0.001
@@ -27,7 +27,7 @@ class DDPG:
         self.noise = OUNoise(self.task.action_size, self.mu, self.theta, self.sigma)
 
         # Define memory replay
-        self.buffer_size = 100000
+        self.buffer_size = 1000000
         self.batch_size = 64
         self.memory = Replay(self.buffer_size, self.batch_size)
 

@@ -5,9 +5,10 @@ import sys
 import csv
 
 num_episodes = 1000
-target_pos = np.array([0., 5., 5.])
-init_pos = np.array([0., 0., 0., 0., 0., 0.])
-task = Task(init_pose=init_pos, target_pos=target_pos, runtime=20.)
+target_pos = np.array([0., 0., 10.])
+init_pos = np.array([0., 0., 1., 0., 0., 0.])
+#init_velocities = np.array([0., 0., 5.])
+task = Task(init_pose=init_pos, target_pos=target_pos)
 agent = DDPG(task)
 
 fout1 = open("reward.dat", 'w')
@@ -31,13 +32,13 @@ for i_episode in range(1, num_episodes+1):
         state = next_state
 
         # Write info to file
-        to_write = [task.sim.time] + list(task.sim.pose) + list(task.sim.v) + list(task.sim.angular_v) + list(action)
-        writer2.writerow(to_write)
+        to_write = [task.sim.time] + list(task.sim.pose[:3]) #+ list(task.sim.v) + list(task.sim.angular_v) + list(action)
+        fout2.write("{:4.2f},   {:7.3f},   {:7.3f},   {:7.3f}   {:7.3f}   {:7.3f}   {:7.3f}   {:7.3f}\n".format(to_write[0], to_write[1], to_write[2], to_write[3],action[0], action[1], action[2], action[3]))
 
         if done:
-            print("\rEpisode = {:4d}, reward = {:7.3f} (best = {:7.3f})".format(
-                i_episode, agent.total_reward, agent.best_reward), end="")  # [debug]
-            to_write = [i_episode, agent.total_reward]
+            print("\rEpisode = {:4d}, score = {:7.3f} (best = {:7.3f})".format(
+                i_episode, agent.score, agent.best_score), end="")  # [debug]
+            to_write = [i_episode, agent.score]
             writer1.writerow(to_write)
             break
     sys.stdout.flush()

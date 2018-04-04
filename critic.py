@@ -1,5 +1,12 @@
 import tensorflow as tf
+from tensorflow.contrib.layers import fully_connected
+from tensorflow.contrib.layers import batch_norm
+from tensorflow.contrib.layers import l2_regularizer
 import numpy as np
+
+#Hyperparameters
+HIDDEN1_SIZE = 400
+HIDDEN2_SIZE = 300
 
 class CriticNet:
     def __init__(self, sess, state_size, action_size, learning_rate, tau):
@@ -22,23 +29,24 @@ class CriticNet:
 
         with tf.variable_scope("train"):
             # State
-            bn1_state = tf.contrib.layers.batch_norm(state, center=True, scale=True, is_training=phase, scope="bn1_state")
-            hidden1_state = tf.contrib.layers.fully_connected(bn1_state, 32, scope='h1_state', activation_fn=None)
-            bn2_state = tf.contrib.layers.batch_norm(hidden1_state, center=True, scale=True, is_training=phase, scope="bn2_state")
+            bn1_state = self.BatchNorm(state, phase, scope="bn1_state")
+            hidden1_state = fully_connected(bn1_state, HIDDEN1_SIZE, scope='h1_state', activation_fn=None, weights_regularizer=l2_regularizer(0.01))
+            bn2_state = self.BatchNorm(hidden1_state, phase, scope="bn2_state")
             activate1_state = tf.nn.relu(bn2_state)
-            hidden2_state = tf.contrib.layers.fully_connected(activate1_state, 64, scope='h2_state', activation_fn=None)
+            hidden2_state = fully_connected(activate1_state, HIDDEN2_SIZE, scope='h2_state', activation_fn=None, weights_regularizer=l2_regularizer(0.01))
 
             # Action
-            bn1_action = tf.contrib.layers.batch_norm(action, center=True, scale=True, is_training=phase, scope="bn1_action")
-            hidden1_action = tf.contrib.layers.fully_connected(bn1_action, 32, scope='h1_action', activation_fn=None)
-            bn2_action = tf.contrib.layers.batch_norm(hidden1_action, center=True, scale=True, is_training=phase, scope="bn2_action")
+            bn1_action = self.BatchNorm(action, phase, scope="bn1_action")
+            hidden1_action = fully_connected(bn1_action, HIDDEN1_SIZE, scope='h1_action', activation_fn=None, weights_regularizer=l2_regularizer(0.01))
+            bn2_action = self.BatchNorm(hidden1_action, phase, scope="bn2_action")
             activate2_action = tf.nn.relu(bn2_action)
-            hidden2_action = tf.contrib.layers.fully_connected(activate2_action, 64, scope='h2_action', activation_fn=None)
+            hidden2_action = fully_connected(activate2_action, HIDDEN2_SIZE, scope='h2_action', activation_fn=None, weights_regularizer=l2_regularizer(0.01))
 
             # Concate
             combine = tf.concat([hidden2_state, hidden2_action], axis=-1)
-            hidden3 = tf.nn.relu(combine)
-            q_values = tf.contrib.layers.fully_connected(hidden3, 1, activation_fn=None, scope='q')
+            bn3 = self.BatchNorm(combine, phase, scope="bn3_critic")
+            hidden3 = tf.nn.relu(bn3)
+            q_values = fully_connected(hidden3, 1, activation_fn=None, scope='q', weights_regularizer=l2_regularizer(0.01))
 
         return state, action, phase, q_values
 
@@ -49,23 +57,24 @@ class CriticNet:
 
         with tf.variable_scope("target"):
             # State
-            bn1_state = tf.contrib.layers.batch_norm(state, center=True, scale=True, is_training=phase, scope="tar_bn1_state")
-            hidden1_state = tf.contrib.layers.fully_connected(bn1_state, 32, scope='tar_h1_state', activation_fn=None)
-            bn2_state = tf.contrib.layers.batch_norm(hidden1_state, center=True, scale=True, is_training=phase, scope="tar_bn2_state")
+            bn1_state = self.BatchNorm(state, phase, scope="tar_bn1_state")
+            hidden1_state = fully_connected(bn1_state, HIDDEN1_SIZE, scope='tar_h1_state', activation_fn=None, weights_regularizer=l2_regularizer(0.01))
+            bn2_state = self.BatchNorm(hidden1_state, phase, scope="tar_bn2_state")
             activate1_state = tf.nn.relu(bn2_state)
-            hidden2_state = tf.contrib.layers.fully_connected(activate1_state, 64, scope='tar_h2_state', activation_fn=None)
+            hidden2_state = fully_connected(activate1_state, HIDDEN2_SIZE, scope='tar_h2_state', activation_fn=None, weights_regularizer=l2_regularizer(0.01))
 
             # Action
-            bn1_action = tf.contrib.layers.batch_norm(action, center=True, scale=True, is_training=phase, scope="tar_bn1_action")
-            hidden1_action = tf.contrib.layers.fully_connected(bn1_action, 32, scope='tar_h1_action', activation_fn=None)
-            bn2_action = tf.contrib.layers.batch_norm(hidden1_action, center=True, scale=True, is_training=phase, scope="tar_bn2_action")
+            bn1_action = self.BatchNorm(action, phase, scope="tar_bn1_action")
+            hidden1_action = fully_connected(bn1_action, HIDDEN1_SIZE, scope='tar_h1_action', activation_fn=None, weights_regularizer=l2_regularizer(0.01))
+            bn2_action = self.BatchNorm(hidden1_action, phase, scope="tar_bn2_action")
             activate2_action = tf.nn.relu(bn2_action)
-            hidden2_action = tf.contrib.layers.fully_connected(activate2_action, 64, scope='tar_h2_action', activation_fn=None)
+            hidden2_action = fully_connected(activate2_action, HIDDEN2_SIZE, scope='tar_h2_action', activation_fn=None, weights_regularizer=l2_regularizer(0.01))
 
             # Concate
             combine = tf.concat([hidden2_state, hidden2_action], axis=-1)
-            hidden3 = tf.nn.relu(combine)
-            q_values = tf.contrib.layers.fully_connected(hidden3, 1, activation_fn=None, scope='tar_q')
+            bn3 = self.BatchNorm(combine, phase, scope="tar_bn3_critic")
+            hidden3 = tf.nn.relu(bn3)
+            q_values = fully_connected(hidden3, 1, activation_fn=None, scope='tar_q', weights_regularizer=l2_regularizer(0.01))
 
         return state, action, phase, q_values
 
@@ -98,11 +107,18 @@ class CriticNet:
         return self.sess.run(self.q_values, feed_dict={self.state:batch_state, self.action:batch_action, self.phase:False})
 
     def targetQ(self, batch_state, batch_action):
-        return self.sess.run(self.tar_q_values, feed_dict={self.tar_state:batch_state, self.tar_action:batch_action, self.tar_phase:True})
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        with tf.control_dependencies(update_ops):
+            return self.sess.run(self.tar_q_values, feed_dict={self.tar_state:batch_state, self.tar_action:batch_action, self.tar_phase:False})
 
     def variables(self, name):
         return tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, name)
 
-
+    def BatchNorm(self, inputT, training, scope=None):
+        return tf.cond(training,
+                lambda: batch_norm(inputT, is_training=True,
+                                   center=True, scale=True, updates_collections=None, scope=scope),
+                lambda: batch_norm(inputT, is_training=False,
+                                   center=True, scale=True, updates_collections=None, scope=scope, reuse = True))
 
 
